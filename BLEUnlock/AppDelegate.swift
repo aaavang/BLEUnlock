@@ -131,6 +131,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
                 statusItem.button?.image = NSImage(named: "StatusBarDisconnected")
             }
         }
+        updateStatusTitle()
     }
 
     func bluetoothPowerWarn() {
@@ -384,8 +385,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
 
     func updateStatusTitle() {
         guard let button = statusItem.button else { return }
+        var parts: [String] = []
+        if let name = ble.monitoredName {
+            parts.append(name)
+        }
+        if connected, let r = lastRSSI {
+            parts.append(String(format: "%ddBm", r))
+        }
         button.imagePosition = .imageLeft
-        button.title = ble.monitoredName.map { " " + $0 } ?? ""
+        button.title = parts.isEmpty ? "" : " " + parts.joined(separator: " ")
     }
 
     func monitoredDeviceChanged(uuid: UUID) {
@@ -399,6 +407,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
         connected = false
         statusItem.button?.image = NSImage(named: "StatusBarDisconnected")
         monitorMenuItem?.title = t("not_detected")
+        updateStatusTitle()
         ble.startMonitor(uuid: uuid)
     }
 
