@@ -74,6 +74,7 @@ Pause "Now Playing" while Locked | On lock/unlock, BLEUnlock pauses/unpauses pla
 Use Screensaver to Lock | If this option is set, BLEUnlock launches screensaver instead of locking. For this option to work properly, you need to set *Require password **immediately** after sleep or screen saver begins* option in *Security & Privacy* preference pane.
 Turn Off Screen on Lock | Turn off the display immediately when locking.
 Set Password... | If you changed your login password, use this.
+Match Device by Name | If the selected device disappears, follow it to a new MAC address that has the same Bluetooth name. Use this for devices that rotate their MAC address, such as Android phones. See [Notes on MAC address](#notes-on-mac-address).
 Passive Mode | By default it actively tries to connect to the BLE device and read the RSSI. Most of the time, the default is recommended and works stably. However, if you are using other Bluetooth things like keyboard, mouse, track pad or most notably Bluetooth Personal Hotspot, the default mode may interfere with each other. 2.4GHz WiFi may interfere as well. If you are experiencing instability of Bluetooth, turn on Passive Mode.
 Launch at Login | Launches BLEUnlock when you login.
 Set Minimum RSSI | Devices with RSSI below this value will not be displayed in the device scan list.
@@ -127,7 +128,11 @@ On the other hand, in order for BLEUnlock to track your device, its MAC address 
 Fortunately, on Apple devices, if you are signed in with the same Apple ID as your Mac, the MAC address is resolved to the true (public) address.
 
 For other devices, including Android, the way to resolve the address is unknown.
-If your non-Apple device changes its MAC address over time, unfortunately BLEUnlock can't support it.
+If your non-Apple device changes its MAC address over time, turn on *Match Device by Name*.
+When the selected device stops being seen, BLEUnlock briefly connects to nearby devices to read their names, and switches to the one with the same name as the device you selected.
+Give your device a unique Bluetooth name, and select it again after renaming it.
+
+> WARNING: a device name is not a secret. Anyone nearby can advertise a BLE device with the same name and unlock your Mac. Use *Match Device by Name* only if you accept that risk.
 
 To check if the MAC address is resolved correctly, compare the MAC address displayed in the *Device* scan list of BLEUnlock with the one that is displayed on your device.
 

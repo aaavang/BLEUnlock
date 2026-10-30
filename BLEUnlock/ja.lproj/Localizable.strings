@@ -13,6 +13,7 @@
 "lock_delay" = "ロックするまでの遅延";
 "lock_now" = "今すぐロック";
 "lock_rssi" = "ロック信号強度";
+"match_by_name" = "デバイス名で照合";
 "minute" = "分";
 "minutes" = "分";
 "not_detected" = "信号未検出";

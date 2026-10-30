@@ -113,6 +113,7 @@ protocol BLEDelegate {
     func updateRSSI(rssi: Int?, active: Bool)
     func updatePresence(presence: Bool, reason: String)
     func bluetoothPowerWarn()
+    func monitoredDeviceChanged(uuid: UUID)
 }
 
 class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
@@ -139,6 +140,11 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     var latestN: Int = 5
     var activeModeTimer : Timer? = nil
     var connectionTimer : Timer? = nil
+    var matchByName = false
+    var monitoredName: String?
+    var lastMonitoredAt = 0.0
+    var probingPeripherals: [UUID : CBPeripheral] = [:]
+    var probedUUIDs: Set<UUID> = []
 
     func scanForPeripherals() {
         guard !centralMgr.isScanning else { return }
@@ -234,6 +240,7 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
 
     func updateMonitoredPeripheral(_ rssi: Int) {
         // print(String(format: "rssi: %d", rssi))
+        lastMonitoredAt = Date().timeIntervalSince1970
         if rssi >= (unlockRSSI == UNLOCK_DISABLED ? lockRSSI : unlockRSSI) && !presence {
             print("Device is close")
             presence = true
@@ -297,6 +304,72 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
         RunLoop.main.add(connectionTimer!, forMode: .common)
     }
 
+    func nameMatches(_ name: String?) -> Bool {
+        guard let expected = monitoredName, let n = name else { return false }
+        return n.trimmingCharacters(in: .whitespaces) == expected
+    }
+
+    // Devices with a rotating private MAC address (e.g. Android) show up under a new UUID.
+    // Follow the device to the new UUID if it has the same name.
+    func switchMonitoredPeripheral(_ peripheral: CBPeripheral) {
+        print("Monitored device found by name: \(peripheral.identifier)")
+        if let p = monitoredPeripheral {
+            centralMgr.cancelPeripheralConnection(p)
+        }
+        activeModeTimer?.invalidate()
+        activeModeTimer = nil
+        monitoredUUID = peripheral.identifier
+        monitoredPeripheral = peripheral
+        for (_, p) in probingPeripherals where p != peripheral {
+            centralMgr.cancelPeripheralConnection(p)
+        }
+        probingPeripherals.removeAll()
+        probedUUIDs.removeAll()
+        delegate?.monitoredDeviceChanged(uuid: peripheral.identifier)
+    }
+
+    func matchMonitoredName(_ peripheral: CBPeripheral, advertisementData: [String : Any], rssi: Int) {
+        // Only while the monitored device is missing. A device can advertise under several
+        // UUIDs at once, and we don't want to flip between them or connect to every device around.
+        guard monitoredName != nil, Date().timeIntervalSince1970 > lastMonitoredAt + 5 else { return }
+        let advName = advertisementData[CBAdvertisementDataLocalNameKey] as? String
+        if nameMatches(advName ?? peripheral.name) {
+            switchMonitoredPeripheral(peripheral)
+            return
+        }
+        // Name is unknown until connected
+        guard advName == nil, peripheral.name == nil else { return }
+        guard rssi >= thresholdRSSI, !probedUUIDs.contains(peripheral.identifier) else { return }
+        print("Probing name of \(peripheral.identifier)")
+        probedUUIDs.insert(peripheral.identifier)
+        probingPeripherals[peripheral.identifier] = peripheral
+        centralMgr.connect(peripheral, options: nil)
+        let timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: false, block: { _ in
+            self.finishProbe(peripheral)
+        })
+        RunLoop.main.add(timer, forMode: .common)
+    }
+
+    func checkProbedName(_ peripheral: CBPeripheral) {
+        guard probingPeripherals[peripheral.identifier] != nil else { return }
+        if nameMatches(peripheral.name) {
+            switchMonitoredPeripheral(peripheral)
+            if passiveMode {
+                centralMgr.cancelPeripheralConnection(peripheral)
+            }
+        } else if peripheral.name != nil {
+            finishProbe(peripheral)
+        }
+        // Otherwise wait for peripheralDidUpdateName or the timeout
+    }
+
+    func finishProbe(_ peripheral: CBPeripheral) {
+        guard probingPeripherals.removeValue(forKey: peripheral.identifier) != nil else { return }
+        if peripheral != monitoredPeripheral && devices[peripheral.identifier] == nil {
+            centralMgr.cancelPeripheralConnection(peripheral)
+        }
+    }
+
     //MARK:- CBCentralManagerDelegate start
 
     func centralManager(_ central: CBCentralManager,
@@ -306,7 +379,10 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     {
         let rssi = RSSI.intValue > 0 ? 0 : RSSI.intValue
         if let uuid = monitoredUUID {
-            if peripheral.identifier.description == uuid.description {
+            if matchByName && peripheral.identifier.description != uuid.description {
+                matchMonitoredName(peripheral, advertisementData: advertisementData, rssi: rssi)
+            }
+            if peripheral.identifier.description == monitoredUUID?.description {
                 if monitoredPeripheral == nil {
                     monitoredPeripheral = peripheral
                 }
@@ -357,12 +433,20 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
         if scanMode {
             peripheral.discoverServices([DeviceInformation])
         }
+        checkProbedName(peripheral)
         if peripheral == monitoredPeripheral && !passiveMode {
             print("Connected")
             connectionTimer?.invalidate()
             connectionTimer = nil
             peripheral.readRSSI()
         }
+    }
+
+    func centralManager(_ central: CBCentralManager,
+                        didFailToConnect peripheral: CBPeripheral,
+                        error: Error?)
+    {
+        finishProbe(peripheral)
     }
 
     //MARK:CBCentralManagerDelegate end -
@@ -446,6 +530,10 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
         }
     }
     
+    func peripheralDidUpdateName(_ peripheral: CBPeripheral) {
+        checkProbedName(peripheral)
+    }
+
     func peripheral(_ peripheral: CBPeripheral,
                     didModifyServices invalidatedServices: [CBService])
     {

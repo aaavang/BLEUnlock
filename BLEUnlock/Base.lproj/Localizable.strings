@@ -13,6 +13,7 @@
 "lock_delay" = "Delay to Lock";
 "lock_now" = "Lock Screen Now";
 "lock_rssi" = "Lock RSSI";
+"match_by_name" = "Match Device by Name";
 "minute" = "minute";
 "minutes" = "minutes";
 "not_detected" = "Signal not detected";

@@ -13,6 +13,7 @@
 "lock_delay" = "Fördröjning för låsning";
 "lock_now" = "Lås skärmen nu";
 "lock_rssi" = "Lås RSSI";
+"match_by_name" = "Matcha enhet efter namn";
 "minute" = "minut";
 "minutes" = "minuter";
 "not_detected" = "Ingen enhet upptäcktes";

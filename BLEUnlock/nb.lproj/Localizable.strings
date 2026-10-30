@@ -13,6 +13,7 @@
 "lock_delay" = "Forsinkelse for låsing";
 "lock_now" = "Lås skjerm nå";
 "lock_rssi" = "Lås RSSI";
+"match_by_name" = "Gjenkjenn enhet etter navn";
 "minute" = "minutt";
 "minutes" = "minutn";
 "not_detected" = "Finner ikke signal";

@@ -13,6 +13,7 @@
 "lock_delay" = "Kilitleme gecikmesi";
 "lock_now" = "Ekranı şimdi kilitle";
 "lock_rssi" = "Kilitleme RSSI değeri";
+"match_by_name" = "Cihazı ada göre eşleştir";
 "minute" = "dakika";
 "minutes" = "dakika";
 "not_detected" = "Sinyal tespit edilemedi";

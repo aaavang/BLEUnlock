@@ -370,10 +370,21 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
             if menuItem == item {
                 monitorDevice(uuid: uuid)
                 prefs.set(uuid.uuidString, forKey: "device")
+                let device = ble.devices[uuid]
+                let name = (device?.peripheral?.name ?? device?.blName)?.trimmingCharacters(in: .whitespaces)
+                ble.monitoredName = name
+                prefs.set(name, forKey: "deviceName")
                 menuItem.state = .on
             } else {
                 menuItem.state = .off
             }
+        }
+    }
+
+    func monitoredDeviceChanged(uuid: UUID) {
+        prefs.set(uuid.uuidString, forKey: "device")
+        for (id, menuItem) in deviceDict {
+            menuItem.state = id == uuid ? .on : .off
         }
     }
 
@@ -546,6 +557,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
         ble.setPassiveMode(passiveMode)
     }
 
+    @objc func toggleMatchByName(_ menuItem: NSMenuItem) {
+        let matchByName = !prefs.bool(forKey: "matchByName")
+        prefs.set(matchByName, forKey: "matchByName")
+        menuItem.state = matchByName ? .on : .off
+        ble.matchByName = matchByName
+    }
+
     @objc func toggleWakeWithoutUnlocking(_ menuItem: NSMenuItem) {
         let wakeWithoutUnlocking = !prefs.bool(forKey: "wakeWithoutUnlocking")
         prefs.set(wakeWithoutUnlocking, forKey: "wakeWithoutUnlocking")
@@ -647,6 +665,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
 
         item = mainMenu.addItem(withTitle: t("passive_mode"), action: #selector(togglePassiveMode), keyEquivalent: "")
         item.state = prefs.bool(forKey: "passiveMode") ? .on : .off
+
+        item = mainMenu.addItem(withTitle: t("match_by_name"), action: #selector(toggleMatchByName), keyEquivalent: "")
+        item.state = prefs.bool(forKey: "matchByName") ? .on : .off
         
         item = mainMenu.addItem(withTitle: t("launch_at_login"), action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
         item.state = prefs.bool(forKey: "launchAtLogin") ? .on : .off
@@ -679,6 +700,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
             constructMenu()
         }
         ble.delegate = self
+        ble.monitoredName = prefs.string(forKey: "deviceName")
+        ble.matchByName = prefs.bool(forKey: "matchByName")
         if let str = prefs.string(forKey: "device") {
             if let uuid = UUID(uuidString: str) {
                 monitorDevice(uuid: uuid)
