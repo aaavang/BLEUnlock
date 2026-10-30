@@ -374,11 +374,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
                 let name = (device?.peripheral?.name ?? device?.blName)?.trimmingCharacters(in: .whitespaces)
                 ble.monitoredName = name
                 prefs.set(name, forKey: "deviceName")
+                updateStatusTitle()
                 menuItem.state = .on
             } else {
                 menuItem.state = .off
             }
         }
+    }
+
+    func updateStatusTitle() {
+        guard let button = statusItem.button else { return }
+        button.imagePosition = .imageLeft
+        button.title = ble.monitoredName.map { " " + $0 } ?? ""
     }
 
     func monitoredDeviceChanged(uuid: UUID) {
@@ -702,6 +709,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
         ble.delegate = self
         ble.monitoredName = prefs.string(forKey: "deviceName")
         ble.matchByName = prefs.bool(forKey: "matchByName")
+        updateStatusTitle()
         if let str = prefs.string(forKey: "device") {
             if let uuid = UUID(uuidString: str) {
                 monitorDevice(uuid: uuid)
