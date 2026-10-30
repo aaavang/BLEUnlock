@@ -132,7 +132,11 @@ If your non-Apple device changes its MAC address over time, turn on *Match Devic
 When the selected device stops being seen, BLEUnlock briefly connects to nearby devices to read their names, and switches to the one with the same name as the device you selected.
 Give your device a unique Bluetooth name, and select it again after renaming it.
 
-> WARNING: a device name is not a secret. Anyone nearby can advertise a BLE device with the same name and unlock your Mac. Use *Match Device by Name* only if you accept that risk.
+> WARNING: a device name is not a secret. Anyone nearby can advertise a BLE device with the same name, and BLEUnlock will treat it as your device:
+> - With *Unlock RSSI* enabled, it can unlock your Mac.
+> - With *Unlock RSSI* set to *Disable*, it can't unlock your Mac, but it can stop BLEUnlock from locking it when you walk away.
+>
+> Use *Match Device by Name* only if you accept that risk.
 
 To check if the MAC address is resolved correctly, compare the MAC address displayed in the *Device* scan list of BLEUnlock with the one that is displayed on your device.
 
