@@ -132,6 +132,7 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     var unlockRSSI = -60
     var proximityTimeout = 5.0
     var signalTimeout = 60.0
+    var pollInterval = 2.0
     var lastReadAt = 0.0
     var powerWarn = true
     var passiveMode = false
@@ -228,7 +229,7 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     }
     
     func getEstimatedRSSI(rssi: Int) -> Int {
-        if latestRSSIs.count >= latestN {
+        while latestRSSIs.count >= latestN {
             latestRSSIs.removeFirst()
         }
         latestRSSIs.append(Double(rssi))
@@ -465,20 +466,33 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
             if !scanMode {
                 centralMgr.stopScan()
             }
-            activeModeTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true, block: { _ in
-                if Date().timeIntervalSince1970 > self.lastReadAt + 10 {
-                    print("Falling back to passive mode")
-                    self.centralMgr.cancelPeripheralConnection(peripheral)
-                    self.activeModeTimer?.invalidate()
-                    self.activeModeTimer = nil
-                    self.scanForPeripherals()
-                } else if peripheral.state == .connected {
-                    peripheral.readRSSI()
-                } else {
-                    self.connectMonitoredPeripheral()
-                }
-            })
-            RunLoop.main.add(activeModeTimer!, forMode: .common)
+            startActiveModeTimer(peripheral)
+        }
+    }
+
+    func startActiveModeTimer(_ peripheral: CBPeripheral) {
+        activeModeTimer?.invalidate()
+        activeModeTimer = Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true, block: { _ in
+            // Allow a few missed polls before giving up, even with a long polling interval
+            if Date().timeIntervalSince1970 > self.lastReadAt + max(10, self.pollInterval * 3) {
+                print("Falling back to passive mode")
+                self.centralMgr.cancelPeripheralConnection(peripheral)
+                self.activeModeTimer?.invalidate()
+                self.activeModeTimer = nil
+                self.scanForPeripherals()
+            } else if peripheral.state == .connected {
+                peripheral.readRSSI()
+            } else {
+                self.connectMonitoredPeripheral()
+            }
+        })
+        RunLoop.main.add(activeModeTimer!, forMode: .common)
+    }
+
+    func setPollInterval(_ interval: Double) {
+        pollInterval = interval
+        if activeModeTimer != nil, let p = monitoredPeripheral {
+            startActiveModeTimer(p)
         }
     }
 
