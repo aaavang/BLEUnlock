@@ -258,17 +258,22 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
                 print("Proximity timer canceled")
                 proximityTimer = nil
             }
-        } else if presence && proximityTimer == nil {
-            proximityTimer = Timer.scheduledTimer(withTimeInterval: proximityTimeout, repeats: false, block: { _ in
-                print("Device is away")
-                self.presence = false
-                self.delegate?.updatePresence(presence: self.presence, reason: "away")
-                self.proximityTimer = nil
-            })
-            RunLoop.main.add(proximityTimer!, forMode: .common)
-            print("Proximity timer started")
+        } else {
+            startProximityTimer()
         }
         resetSignalTimer()
+    }
+
+    func startProximityTimer() {
+        guard presence && proximityTimer == nil else { return }
+        proximityTimer = Timer.scheduledTimer(withTimeInterval: proximityTimeout, repeats: false, block: { _ in
+            print("Device is away")
+            self.presence = false
+            self.delegate?.updatePresence(presence: self.presence, reason: "away")
+            self.proximityTimer = nil
+        })
+        RunLoop.main.add(proximityTimer!, forMode: .common)
+        print("Proximity timer started")
     }
 
     func resetScanTimer(device: Device) {
@@ -448,6 +453,24 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
                         error: Error?)
     {
         finishProbe(peripheral)
+    }
+
+    func centralManager(_ central: CBCentralManager,
+                        didDisconnectPeripheral peripheral: CBPeripheral,
+                        error: Error?)
+    {
+        // error is nil when we cancelled the connection ourselves, and Bluetooth turning off is handled elsewhere
+        guard peripheral == monitoredPeripheral, error != nil, central.state == .poweredOn else { return }
+        print("Disconnected: \(error!.localizedDescription)")
+        // The link usually drops because the device went out of range, possibly before the averaged
+        // RSSI fell below Lock RSSI. Start the lock delay now instead of waiting for the no-signal timeout,
+        // and go back to scanning so an advertisement from a device that is still close can cancel it.
+        // Forget the readings from before the drop, so they don't outvote a weak advertisement.
+        activeModeTimer?.invalidate()
+        activeModeTimer = nil
+        latestRSSIs.removeAll()
+        startProximityTimer()
+        scanForPeripherals()
     }
 
     //MARK:CBCentralManagerDelegate end -

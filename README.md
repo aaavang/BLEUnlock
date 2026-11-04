@@ -66,7 +66,7 @@ Option | Description
 Lock Screen Now | It locks the screen regardless of whether the BLE device is nearby or not; it will unlock once the BLE device moves away and then moves closer again. This is useful to ensure that the screen is locked before you leave your seat.
 Unlock RSSI | Bluetooth signal strength to unlock. Larger value indicates that the BLE device needs to be closer to the Mac to unlock. Choose *Disable* to disable unlocking.
 Lock RSSI | Bluetooth signal strength to lock. Smaller value indicates that the BLE device needs to be farther away from the Mac to lock. Choose *Disable* to disable locking.
-Delay to Lock | Duration of time before it locks the Mac when it detects that the BLE device is away. If the BLE device comes closer within that time, no lock will occur. Choose *Custom…* to enter any value.
+Delay to Lock | Duration of time before it locks the Mac when it detects that the BLE device is away. If the BLE device comes closer within that time, no lock will occur. The delay also starts when the connection to the BLE device drops unexpectedly. Choose *Custom…* to enter any value.
 No-Signal Timeout | Time between last signal reception and locking. If you experience frequent "Signal is lost" locking, increase this value. Choose *Custom…* to enter any value.
 RSSI Polling Interval | How often the signal strength is read while connected (not in Passive Mode). Shorter intervals detect that you walked away sooner.
 RSSI Smoothing | Number of recent readings averaged before comparing against Lock RSSI. Fewer readings react faster but lock more often on a momentary dip.
