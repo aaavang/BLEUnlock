@@ -10,8 +10,8 @@
 "enter_password" = "Enter password to unlock the lock screen.";
 "enter_rssi_threshold" = "Enter Minimum RSSI";
 "enter_rssi_threshold_info" = "Device whose RSSI is less than this value will be ignored while scanning.";
-"enter_samples" = "Enter a whole number of RSSI readings to average (1 or more).";
-"enter_seconds" = "Enter a number of seconds (%@ or more).";
+"enter_samples" = "Enter a whole number of RSSI readings to average, from %@ to %@.";
+"enter_seconds" = "Enter a number of seconds from %@ to %@.";
 "farther" = "⬇Farther";
 "invalid_value" = "Invalid value";
 "launch_at_login" = "Launch at Login";

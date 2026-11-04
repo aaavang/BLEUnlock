@@ -10,8 +10,8 @@
 "enter_password" = "ロック画面を解除するためのパスワードを入力してください。";
 "enter_rssi_threshold" = "最小RSSIを入力";
 "enter_rssi_threshold_info" = "この値よりRSSIが小さいデバイスはスキャンに表示されません。";
-"enter_samples" = "平均するRSSI読み取り回数を整数で入力してください（1以上）。";
-"enter_seconds" = "秒数を入力してください（%@以上）。";
+"enter_samples" = "平均するRSSI読み取り回数を%@〜%@の整数で入力してください。";
+"enter_seconds" = "%@〜%@の秒数を入力してください。";
 "farther" = "⬇遠い";
 "invalid_value" = "無効な値です";
 "launch_at_login" = "ログイン時に起動";

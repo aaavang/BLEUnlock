@@ -10,8 +10,8 @@
 "enter_password" = "输入密码以解锁电脑。";
 "enter_rssi_threshold" = "输入最小RSSI";
 "enter_rssi_threshold_info" = "扫描设备时会忽略RSSI值低于该值的设备。";
-"enter_samples" = "输入要平均的 RSSI 读数次数（整数，至少 1）。";
-"enter_seconds" = "输入秒数（至少 %@）。";
+"enter_samples" = "输入要平均的 RSSI 读数次数（%@ 到 %@ 之间的整数）。";
+"enter_seconds" = "输入 %@ 到 %@ 之间的秒数。";
 "farther" = "⬇远离";
 "invalid_value" = "无效的值";
 "launch_at_login" = "开机启动";

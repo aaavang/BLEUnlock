@@ -10,8 +10,8 @@
 "enter_password" = "Skriv inn passord for å låse opp låseskjermen.";
 "enter_rssi_threshold" = "Angi minimum RSSI";
 "enter_rssi_threshold_info" = "Enhet der RSSI er mindre enn denne verdien, ignoreres under skanning.";
-"enter_samples" = "Skriv inn antall RSSI-målinger det skal tas gjennomsnitt av, som et heltall (minst 1).";
-"enter_seconds" = "Skriv inn antall sekunder (minst %@).";
+"enter_samples" = "Skriv inn antall RSSI-målinger det skal tas gjennomsnitt av, som et heltall fra %@ til %@.";
+"enter_seconds" = "Skriv inn antall sekunder fra %@ til %@.";
 "farther" = "⬇Lenger unna";
 "invalid_value" = "Ugyldig verdi";
 "launch_at_login" = "Start ved innlogging";

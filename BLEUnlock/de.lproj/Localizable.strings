@@ -10,8 +10,8 @@
 "enter_password" = "Passwort eingeben, um den Sperrschirm zu entsperren.";
 "enter_rssi_threshold" = "Minimum RSSI eingeben";
 "enter_rssi_threshold_info" = "Gerät mit geringerem RSSI als diesem Wert wird beim Scannen ignoriert.";
-"enter_samples" = "Anzahl der zu mittelnden RSSI-Messungen als ganze Zahl eingeben (mindestens 1).";
-"enter_seconds" = "Anzahl Sekunden eingeben (mindestens %@).";
+"enter_samples" = "Anzahl der zu mittelnden RSSI-Messungen als ganze Zahl zwischen %@ und %@ eingeben.";
+"enter_seconds" = "Anzahl Sekunden zwischen %@ und %@ eingeben.";
 "farther" = "⬇weiter";
 "invalid_value" = "Ungültiger Wert";
 "launch_at_login" = "Beim Login starten";

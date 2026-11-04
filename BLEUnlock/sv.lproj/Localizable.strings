@@ -10,8 +10,8 @@
 "enter_password" = "Ange lösenord för att låsa upp skärmen automatiskt.";
 "enter_rssi_threshold" = "Ange minsta RSSI värde";
 "enter_rssi_threshold_info" = "Enheter vars RSSI-värde är lägre än detta kommer att ignoreras vid skanning efter en ny enhet.";
-"enter_samples" = "Ange antalet RSSI-mätningar att beräkna medelvärdet av, som ett heltal (minst 1).";
-"enter_seconds" = "Ange antal sekunder (minst %@).";
+"enter_samples" = "Ange antalet RSSI-mätningar att beräkna medelvärdet av, som ett heltal från %@ till %@.";
+"enter_seconds" = "Ange antal sekunder från %@ till %@.";
 "farther" = "⬇Längre bort";
 "invalid_value" = "Ogiltigt värde";
 "launch_at_login" = "Starta vid inloggning";

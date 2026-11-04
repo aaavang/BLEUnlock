@@ -10,8 +10,8 @@
 "enter_password" = "Kilit ekranı açmak için şifrenizi girin";
 "enter_rssi_threshold" = "Minimum RSSI belirle";
 "enter_rssi_threshold_info" = "Eğer aygıt RSSI değeri bu değerin altında ise arama sırasında yok sayılacaktır.";
-"enter_samples" = "Ortalaması alınacak RSSI ölçümü sayısını tam sayı olarak girin (en az 1).";
-"enter_seconds" = "Saniye sayısını girin (en az %@).";
+"enter_samples" = "Ortalaması alınacak RSSI ölçümü sayısını %@ ile %@ arasında bir tam sayı olarak girin.";
+"enter_seconds" = "%@ ile %@ arasında saniye sayısı girin.";
 "farther" = "⬇Uzak";
 "invalid_value" = "Geçersiz değer";
 "launch_at_login" = "Başlangıçta çalıştır";

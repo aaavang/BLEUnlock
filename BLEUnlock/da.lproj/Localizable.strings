@@ -10,8 +10,8 @@
 "enter_password" = "Indtast adgangskode for at låse låseskærmen op.";
 "enter_rssi_threshold" = "Indtast mindste RSSI";
 "enter_rssi_threshold_info" = "Enheder, hvis RSSI er mindre end denne værdi, vil blive ignoreret under scanningen.";
-"enter_samples" = "Indtast antallet af RSSI-målinger, der skal tages gennemsnit af, som et helt tal (mindst 1).";
-"enter_seconds" = "Indtast antal sekunder (mindst %@).";
+"enter_samples" = "Indtast antallet af RSSI-målinger, der skal tages gennemsnit af, som et helt tal fra %@ til %@.";
+"enter_seconds" = "Indtast antal sekunder fra %@ til %@.";
 "farther" = "⬇Længere væk";
 "invalid_value" = "Ugyldig værdi";
 "launch_at_login" = "Start ved login";

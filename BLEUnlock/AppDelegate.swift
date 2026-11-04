@@ -32,6 +32,21 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
     var unlockedAt = 0.0
     var inScreensaver = false
     var lastRSSI: Int? = nil
+    let lockDelayRange = 0.0...3600
+    let smoothingRange = 1.0...100
+    let pollIntervalLimits = 0.1...60.0
+
+    // No-Signal Timeout has to outlast the fallback to passive mode,
+    // or a few missed readings would lock before scanning can take over
+    var timeoutRange: ClosedRange<Double> {
+        return (ble.activeModeFallback + 1)...3600
+    }
+
+    var pollIntervalRange: ClosedRange<Double> {
+        // The longest interval whose fallback still fits in timeoutRange, rounded down to 0.1 seconds
+        let longest = ((ble.signalTimeout - 1) * 10 / 3).rounded(.down) / 10
+        return pollIntervalLimits.lowerBound...max(pollIntervalLimits.lowerBound, min(pollIntervalLimits.upperBound, longest))
+    }
 
     func menuWillOpen(_ menu: NSMenu) {
         if menu == deviceMenu {
@@ -83,6 +98,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
             return menuItem.tag <= ble.unlockRSSI
         } else if menuItem.menu == unlockRSSIMenu {
             return menuItem.tag >= ble.lockRSSI
+        } else if let value = menuItem.representedObject as? Double {
+            if menuItem.menu == timeoutMenu {
+                return timeoutRange.contains(value)
+            } else if menuItem.menu == pollIntervalMenu {
+                return pollIntervalRange.contains(value)
+            }
         }
         return true
     }
@@ -538,11 +559,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
         ble.unlockRSSI = value
     }
 
-    // Preset items carry their value; the Custom… item asks for one
-    func menuValue(_ menuItem: NSMenuItem, info: String, current: Double, minimum: Double, wholeNumber: Bool = false) -> Double? {
+    // Preset items carry their value; the Custom… item asks for one within range
+    func menuValue(_ menuItem: NSMenuItem, infoKey: String, current: Double, range: ClosedRange<Double>, wholeNumber: Bool = false) -> Double? {
         if let value = menuItem.representedObject as? Double {
             return value
         }
+        let info = String(format: t(infoKey), String(format: "%g", range.lowerBound), String(format: "%g", range.upperBound))
         let msg = NSAlert()
         msg.addButton(withTitle: t("ok"))
         msg.addButton(withTitle: t("cancel"))
@@ -559,7 +581,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
 
         let str = txt.stringValue.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: ".")
         guard !str.isEmpty else { return nil }
-        guard let value = Double(str), value.isFinite, value >= minimum, !wholeNumber || value == value.rounded() else {
+        guard let value = Double(str), range.contains(value), !wholeNumber || value == value.rounded() else {
             errorModal(t("invalid_value"), info: info)
             return nil
         }
@@ -567,25 +589,25 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
     }
 
     @objc func setTimeout(_ menuItem: NSMenuItem) {
-        guard let value = menuValue(menuItem, info: String(format: t("enter_seconds"), "1"), current: ble.signalTimeout, minimum: 1) else { return }
+        guard let value = menuValue(menuItem, infoKey: "enter_seconds", current: ble.signalTimeout, range: timeoutRange) else { return }
         prefs.set(value, forKey: "timeout")
         ble.signalTimeout = value
     }
 
     @objc func setLockDelay(_ menuItem: NSMenuItem) {
-        guard let value = menuValue(menuItem, info: String(format: t("enter_seconds"), "0"), current: ble.proximityTimeout, minimum: 0) else { return }
+        guard let value = menuValue(menuItem, infoKey: "enter_seconds", current: ble.proximityTimeout, range: lockDelayRange) else { return }
         prefs.set(value, forKey: "lockDelay")
         ble.proximityTimeout = value
     }
 
     @objc func setPollInterval(_ menuItem: NSMenuItem) {
-        guard let value = menuValue(menuItem, info: String(format: t("enter_seconds"), "0.1"), current: ble.pollInterval, minimum: 0.1) else { return }
+        guard let value = menuValue(menuItem, infoKey: "enter_seconds", current: ble.pollInterval, range: pollIntervalRange) else { return }
         prefs.set(value, forKey: "pollInterval")
         ble.setPollInterval(value)
     }
 
     @objc func setSmoothing(_ menuItem: NSMenuItem) {
-        guard let value = menuValue(menuItem, info: t("enter_samples"), current: Double(ble.latestN), minimum: 1, wholeNumber: true) else { return }
+        guard let value = menuValue(menuItem, infoKey: "enter_samples", current: Double(ble.latestN), range: smoothingRange, wholeNumber: true) else { return }
         prefs.set(Int(value), forKey: "smoothingSamples")
         ble.latestN = Int(value)
     }
@@ -656,6 +678,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
         menu.delegate = self
     }
     
+    func clamp(_ value: Double, to range: ClosedRange<Double>) -> Double {
+        return min(max(value, range.lowerBound), range.upperBound)
+    }
+
     func durationTitle(_ seconds: Double) -> String {
         if seconds >= 60 && seconds.truncatingRemainder(dividingBy: 60) == 0 {
             let minutes = Int(seconds / 60)
@@ -707,7 +733,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
 
         let timeoutItem = mainMenu.addItem(withTitle: t("timeout"), action: nil, keyEquivalent: "")
         timeoutItem.submenu = timeoutMenu
-        constructValueMenu(timeoutMenu, [5, 10, 15, 30, 60, 120, 300, 600], durationTitle, #selector(setTimeout))
+        constructValueMenu(timeoutMenu, [15, 30, 60, 120, 300, 600], durationTitle, #selector(setTimeout))
 
         let pollIntervalItem = mainMenu.addItem(withTitle: t("poll_interval"), action: nil, keyEquivalent: "")
         pollIntervalItem.submenu = pollIntervalMenu
@@ -797,17 +823,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
         if unlockRSSI != 0 {
             ble.unlockRSSI = unlockRSSI
         }
+        // Saved values can predate the limits or have been edited by hand
+        let pollInterval = prefs.double(forKey: "pollInterval")
+        if pollInterval != 0 {
+            ble.pollInterval = clamp(pollInterval, to: pollIntervalLimits)
+        }
         let timeout = prefs.double(forKey: "timeout")
         if timeout != 0 {
             ble.signalTimeout = timeout
         }
-        let pollInterval = prefs.double(forKey: "pollInterval")
-        if pollInterval != 0 {
-            ble.pollInterval = pollInterval
-        }
+        ble.signalTimeout = clamp(ble.signalTimeout, to: timeoutRange)
         let smoothingSamples = prefs.integer(forKey: "smoothingSamples")
         if smoothingSamples != 0 {
-            ble.latestN = smoothingSamples
+            ble.latestN = Int(clamp(Double(smoothingSamples), to: smoothingRange))
         }
         ble.setPassiveMode(prefs.bool(forKey: "passiveMode"))
         let thresholdRSSI = prefs.integer(forKey: "thresholdRSSI")
@@ -816,7 +844,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
         }
         // 0 is a valid delay, so check for presence instead
         if prefs.object(forKey: "lockDelay") != nil {
-            ble.proximityTimeout = prefs.double(forKey: "lockDelay")
+            ble.proximityTimeout = clamp(prefs.double(forKey: "lockDelay"), to: lockDelayRange)
         }
 
         NSUserNotificationCenter.default.delegate = self

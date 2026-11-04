@@ -493,11 +493,16 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
         }
     }
 
+    // How long active mode waits for a reading before falling back to passive mode.
+    // Allow a few missed polls before giving up, even with a long polling interval.
+    var activeModeFallback: Double {
+        return max(10, pollInterval * 3)
+    }
+
     func startActiveModeTimer(_ peripheral: CBPeripheral) {
         activeModeTimer?.invalidate()
         activeModeTimer = Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true, block: { _ in
-            // Allow a few missed polls before giving up, even with a long polling interval
-            if Date().timeIntervalSince1970 > self.lastReadAt + max(10, self.pollInterval * 3) {
+            if Date().timeIntervalSince1970 > self.lastReadAt + self.activeModeFallback {
                 print("Falling back to passive mode")
                 self.centralMgr.cancelPeripheralConnection(peripheral)
                 self.activeModeTimer?.invalidate()
