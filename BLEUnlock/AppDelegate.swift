@@ -581,9 +581,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
         NSApp.activate(ignoringOtherApps: true)
         guard msg.runModal() == .alertFirstButtonReturn else { return nil }
 
-        let str = txt.stringValue.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: ".")
+        let str = txt.stringValue.trimmingCharacters(in: .whitespaces)
         guard !str.isEmpty else { return nil }
-        guard let value = Double(str), range.contains(value), !wholeNumber || value == value.rounded() else {
+        // Accept "0.5" everywhere and the locale's decimal separator, like "0,5", but not thousands separators
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.usesGroupingSeparator = false
+        guard let value = Double(str) ?? formatter.number(from: str)?.doubleValue,
+              range.contains(value), !wholeNumber || value == value.rounded() else {
             errorModal(t("invalid_value"), info: info)
             return nil
         }
@@ -688,6 +693,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
     }
     
     func clamp(_ value: Double, to range: ClosedRange<Double>) -> Double {
+        guard !value.isNaN else { return range.lowerBound }
         return min(max(value, range.lowerBound), range.upperBound)
     }
 
