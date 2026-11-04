@@ -132,6 +132,7 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     var unlockRSSI = -60
     var proximityTimeout = 5.0
     var signalTimeout = 60.0
+    var pollInterval = 2.0
     var lastReadAt = 0.0
     var powerWarn = true
     var passiveMode = false
@@ -141,6 +142,7 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     var activeModeTimer : Timer? = nil
     var connectionTimer : Timer? = nil
     var matchByName = false
+    var lockOnDisconnect = true
     var monitoredName: String?
     var lastMonitoredAt = 0.0
     var probingPeripherals: [UUID : CBPeripheral] = [:]
@@ -182,6 +184,7 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
         }
         monitoredUUID = uuid
         proximityTimer?.invalidate()
+        proximityTimer = nil
         resetSignalTimer()
         presence = true
         monitoredPeripheral = nil
@@ -228,7 +231,7 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     }
     
     func getEstimatedRSSI(rssi: Int) -> Int {
-        if latestRSSIs.count >= latestN {
+        while latestRSSIs.count >= latestN {
             latestRSSIs.removeFirst()
         }
         latestRSSIs.append(Double(rssi))
@@ -257,17 +260,22 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
                 print("Proximity timer canceled")
                 proximityTimer = nil
             }
-        } else if presence && proximityTimer == nil {
-            proximityTimer = Timer.scheduledTimer(withTimeInterval: proximityTimeout, repeats: false, block: { _ in
-                print("Device is away")
-                self.presence = false
-                self.delegate?.updatePresence(presence: self.presence, reason: "away")
-                self.proximityTimer = nil
-            })
-            RunLoop.main.add(proximityTimer!, forMode: .common)
-            print("Proximity timer started")
+        } else {
+            startProximityTimer()
         }
         resetSignalTimer()
+    }
+
+    func startProximityTimer() {
+        guard presence && proximityTimer == nil else { return }
+        proximityTimer = Timer.scheduledTimer(withTimeInterval: proximityTimeout, repeats: false, block: { _ in
+            print("Device is away")
+            self.presence = false
+            self.delegate?.updatePresence(presence: self.presence, reason: "away")
+            self.proximityTimer = nil
+        })
+        RunLoop.main.add(proximityTimer!, forMode: .common)
+        print("Proximity timer started")
     }
 
     func resetScanTimer(device: Device) {
@@ -449,6 +457,22 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
         finishProbe(peripheral)
     }
 
+    func centralManager(_ central: CBCentralManager,
+                        didDisconnectPeripheral peripheral: CBPeripheral,
+                        error: Error?)
+    {
+        // error is nil when we cancelled the connection ourselves
+        guard lockOnDisconnect, !passiveMode, peripheral == monitoredPeripheral,
+              let error = error, central.state == .poweredOn else { return }
+        print("Disconnected: \(error.localizedDescription)")
+        // Likely out of range. Start the lock delay, and scan so a fresh advertisement can cancel it.
+        activeModeTimer?.invalidate()
+        activeModeTimer = nil
+        latestRSSIs.removeAll()
+        startProximityTimer()
+        scanForPeripherals()
+    }
+
     //MARK:CBCentralManagerDelegate end -
     
     //MARK:- CBPeripheralDelegate start
@@ -465,20 +489,38 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
             if !scanMode {
                 centralMgr.stopScan()
             }
-            activeModeTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true, block: { _ in
-                if Date().timeIntervalSince1970 > self.lastReadAt + 10 {
-                    print("Falling back to passive mode")
-                    self.centralMgr.cancelPeripheralConnection(peripheral)
-                    self.activeModeTimer?.invalidate()
-                    self.activeModeTimer = nil
-                    self.scanForPeripherals()
-                } else if peripheral.state == .connected {
-                    peripheral.readRSSI()
-                } else {
-                    self.connectMonitoredPeripheral()
-                }
-            })
-            RunLoop.main.add(activeModeTimer!, forMode: .common)
+            startActiveModeTimer(peripheral)
+        }
+    }
+
+    // How long active mode waits for a reading before falling back to passive mode.
+    // Allow a few missed polls before giving up, even with a long polling interval.
+    var activeModeFallback: Double {
+        return max(10, pollInterval * 3)
+    }
+
+    func startActiveModeTimer(_ peripheral: CBPeripheral) {
+        activeModeTimer?.invalidate()
+        activeModeTimer = Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true, block: { _ in
+            if Date().timeIntervalSince1970 > self.lastReadAt + self.activeModeFallback {
+                print("Falling back to passive mode")
+                self.centralMgr.cancelPeripheralConnection(peripheral)
+                self.activeModeTimer?.invalidate()
+                self.activeModeTimer = nil
+                self.scanForPeripherals()
+            } else if peripheral.state == .connected {
+                peripheral.readRSSI()
+            } else {
+                self.connectMonitoredPeripheral()
+            }
+        })
+        RunLoop.main.add(activeModeTimer!, forMode: .common)
+    }
+
+    func setPollInterval(_ interval: Double) {
+        pollInterval = interval
+        if activeModeTimer != nil, let p = monitoredPeripheral {
+            startActiveModeTimer(p)
         }
     }
 

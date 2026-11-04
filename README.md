@@ -66,8 +66,10 @@ Option | Description
 Lock Screen Now | It locks the screen regardless of whether the BLE device is nearby or not; it will unlock once the BLE device moves away and then moves closer again. This is useful to ensure that the screen is locked before you leave your seat.
 Unlock RSSI | Bluetooth signal strength to unlock. Larger value indicates that the BLE device needs to be closer to the Mac to unlock. Choose *Disable* to disable unlocking.
 Lock RSSI | Bluetooth signal strength to lock. Smaller value indicates that the BLE device needs to be farther away from the Mac to lock. Choose *Disable* to disable locking.
-Delay to Lock | Duration of time before it locks the Mac when it detects that the BLE device is away. If the BLE device comes closer within that time, no lock will occur.
-No-Signal Timeout | Time between last signal reception and locking. If you experience frequent "Signal is lost" locking, increase this value.
+Delay to Lock | Duration of time before it locks the Mac when it detects that the BLE device is away. If the BLE device comes closer within that time, no lock will occur. Choose *Custom…* to enter any value.
+No-Signal Timeout | Time between last signal reception and locking. If you experience frequent "Signal is lost" locking, increase this value. Choose *Custom…* to enter any value. It has to leave time for active mode to fall back to Passive Mode and hear the device again (4 × RSSI Polling Interval + 2 seconds, and at least 12 seconds + 1 interval), so values that are too short are disabled.
+RSSI Polling Interval | How often the signal strength is read while connected (not in Passive Mode). Shorter intervals detect that you walked away sooner. Choose *Custom…* to enter any value. Intervals too long for the current *No-Signal Timeout* are disabled.
+RSSI Smoothing | Number of recent readings averaged before comparing against Lock RSSI. Fewer readings react faster but lock more often on a momentary dip. Choose *Custom…* to enter any value.
 Wake on Proximity | Wakes up the display from sleep when the BLE device approaches while locking.
 Wake without Unlocking | BLEUnlock will not unlock the Mac when the display wakes up from sleep, whether automatically via "Wake on Proximity" or manually. This allows for compatibility with the macOS built-in unlock with Apple Watch feature (which can operate immediately after BLEUnlock wakes the screen), or if you just prefer the lock screen to appear more quickly but don't want it to auto-unlock.
 Pause "Now Playing" while Locked | On lock/unlock, BLEUnlock pauses/unpauses playback of music or video (including Apple Music, QuickTime Player and Spotify) that is controlled by *Now Playing* widget or the ⏯ key on the keyboard.
@@ -76,6 +78,7 @@ Turn Off Screen on Lock | Turn off the display immediately when locking.
 Set Password... | If you changed your login password, use this.
 Match Device by Name | If the selected device disappears, follow it to a new MAC address that has the same Bluetooth name. Use this for devices that rotate their MAC address, such as Android phones. See [Notes on MAC address](#notes-on-mac-address).
 Passive Mode | By default it actively tries to connect to the BLE device and read the RSSI. Most of the time, the default is recommended and works stably. However, if you are using other Bluetooth things like keyboard, mouse, track pad or most notably Bluetooth Personal Hotspot, the default mode may interfere with each other. 2.4GHz WiFi may interfere as well. If you are experiencing instability of Bluetooth, turn on Passive Mode.
+Lock on Disconnect | When the connection to the BLE device drops unexpectedly, start *Delay to Lock* right away instead of waiting for *No-Signal Timeout*. The Mac locks unless the device is seen nearby again within the delay. This locks sooner when you walk away, but may lock if the connection drops while the device is still close; if that happens, increase *Delay to Lock* or turn this off. Has no effect in Passive Mode. On by default.
 Launch at Login | Launches BLEUnlock when you login.
 Set Minimum RSSI | Devices with RSSI below this value will not be displayed in the device scan list.
 
