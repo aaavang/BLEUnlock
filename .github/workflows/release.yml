@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Each release is numbered after the previous tag, so never run two at once
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+
+    # Manual runs can be started from any branch; only release master
+    if: github.ref == 'refs/heads/master'
+    runs-on: macOS-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # tags, to number the release and list the changes since the last one
+    - name: Build
+      run: scripts/build-cli.sh
+    - name: Package
+      run: ditto -c -k --keepParent build/cli/BLEUnlock.app BLEUnlock.zip
+    - name: Publish
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        version=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" BLEUnlock/Info.plist)
+        if [ -n "$(git tag --points-at "$GITHUB_SHA" --list "$version-fork.*")" ]; then
+          echo "$GITHUB_SHA is already released"
+          exit 0
+        fi
+        last=$(git tag --list "$version-fork.*" | sed "s/^$version-fork\.//" | grep -E '^[0-9]+$' | sort -n | tail -1 || true)
+        tag="$version-fork.$(( ${last:-0} + 1 ))"
+        args=(--target "$GITHUB_SHA" --title "$tag" --generate-notes)
+        if [ -n "$last" ]; then
+          args+=(--notes-start-tag "$version-fork.$last")
+        fi
+        notes=$(cat <<'EOF'
+        ## Install
+
+        1. Download `BLEUnlock.zip`, unzip it, and move `BLEUnlock.app` to Applications. Quit any other copy of BLEUnlock first.
+        2. The app is not notarized (built with `scripts/build-cli.sh`, ad-hoc signed), so macOS blocks the first launch. Either open it, then allow it in **System Settings › Privacy & Security › Open Anyway**, or run:
+           ```
+           xattr -dr com.apple.quarantine /Applications/BLEUnlock.app
+           ```
+        3. Grant Bluetooth, Accessibility and Keychain (**Always Allow**) access.
+
+        ## Limitations of this build
+
+        - Apple silicon (arm64) only, macOS 11 or later.
+        - **About BLEUnlock** doesn't open, and **Launch at Login** doesn't work. Add the app under **System Settings › General › Login Items** instead.
+        EOF
+        )
+        gh release create "$tag" BLEUnlock.zip "${args[@]}" --notes "$notes"
