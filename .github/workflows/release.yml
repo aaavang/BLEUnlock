@@ -16,6 +16,8 @@ concurrency:
 jobs:
   release:
 
+    # Manual runs can be started from any branch; only release master
+    if: github.ref == 'refs/heads/master'
     runs-on: macOS-latest
 
     steps:
@@ -31,6 +33,10 @@ jobs:
         GH_TOKEN: ${{ github.token }}
       run: |
         version=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" BLEUnlock/Info.plist)
+        if [ -n "$(git tag --points-at "$GITHUB_SHA" --list "$version-fork.*")" ]; then
+          echo "$GITHUB_SHA is already released"
+          exit 0
+        fi
         last=$(git tag --list "$version-fork.*" | sed "s/^$version-fork\.//" | grep -E '^[0-9]+$' | sort -n | tail -1 || true)
         tag="$version-fork.$(( ${last:-0} + 1 ))"
         args=(--target "$GITHUB_SHA" --title "$tag" --generate-notes)
