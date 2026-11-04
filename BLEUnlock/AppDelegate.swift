@@ -36,15 +36,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
     let smoothingRange = 1.0...100
     let pollIntervalLimits = 0.1...60.0
 
-    // No-Signal Timeout has to outlast the fallback to passive mode,
-    // or a few missed readings would lock before scanning can take over
+    // No-Signal Timeout has to outlast the fallback to passive mode (only checked on each poll, so up to one
+    // interval late) plus 2 seconds for an advertisement, or a few missed readings would lock before scanning
+    // can take over. Both bounds are widened by a hair so the value shown in the Custom… dialog is accepted.
     var timeoutRange: ClosedRange<Double> {
-        return (ble.activeModeFallback + 1)...3600
+        return (ble.activeModeFallback + ble.pollInterval + 2 - 1e-9)...3600
     }
 
     var pollIntervalRange: ClosedRange<Double> {
-        // The longest interval whose fallback still fits in timeoutRange, rounded down to 0.1 seconds
-        let longest = ((ble.signalTimeout - 1) * 10 / 3).rounded(.down) / 10
+        // The longest interval that keeps the timeout within timeoutRange
+        let timeout = ble.signalTimeout
+        let longest = min(timeout - 12, max(10.0 / 3, (timeout - 2) / 4)) + 1e-9
         return pollIntervalLimits.lowerBound...max(pollIntervalLimits.lowerBound, min(pollIntervalLimits.upperBound, longest))
     }
 
