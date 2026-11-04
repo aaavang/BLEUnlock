@@ -184,6 +184,7 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
         }
         monitoredUUID = uuid
         proximityTimer?.invalidate()
+        proximityTimer = nil
         resetSignalTimer()
         presence = true
         monitoredPeripheral = nil
