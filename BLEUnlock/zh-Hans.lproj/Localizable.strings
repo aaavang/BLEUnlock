@@ -17,6 +17,7 @@
 "launch_at_login" = "开机启动";
 "lock_delay" = "延迟锁定";
 "lock_now" = "立刻锁定屏幕";
+"lock_on_disconnect" = "断开连接时锁定";
 "lock_rssi" = "锁定 RSSI";
 "match_by_name" = "按名称匹配设备";
 "minute" = "分钟";

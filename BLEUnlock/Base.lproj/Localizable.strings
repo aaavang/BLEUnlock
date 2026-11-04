@@ -17,6 +17,7 @@
 "launch_at_login" = "Launch at Login";
 "lock_delay" = "Delay to Lock";
 "lock_now" = "Lock Screen Now";
+"lock_on_disconnect" = "Lock on Disconnect";
 "lock_rssi" = "Lock RSSI";
 "match_by_name" = "Match Device by Name";
 "minute" = "minute";

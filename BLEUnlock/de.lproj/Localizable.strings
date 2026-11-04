@@ -17,6 +17,7 @@
 "launch_at_login" = "Beim Login starten";
 "lock_delay" = "Sperrverzögerung";
 "lock_now" = "Jetzt sperren";
+"lock_on_disconnect" = "Bei Verbindungsabbruch sperren";
 "lock_rssi" = "RSSI Sperren";
 "match_by_name" = "Gerät anhand des Namens erkennen";
 "minute" = "Minute";

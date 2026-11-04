@@ -17,6 +17,7 @@
 "launch_at_login" = "Start ved innlogging";
 "lock_delay" = "Forsinkelse for låsing";
 "lock_now" = "Lås skjerm nå";
+"lock_on_disconnect" = "Lås ved frakobling";
 "lock_rssi" = "Lås RSSI";
 "match_by_name" = "Gjenkjenn enhet etter navn";
 "minute" = "minutt";

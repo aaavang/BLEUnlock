@@ -17,6 +17,7 @@
 "launch_at_login" = "ログイン時に起動";
 "lock_delay" = "ロックするまでの遅延";
 "lock_now" = "今すぐロック";
+"lock_on_disconnect" = "切断時にロック";
 "lock_rssi" = "ロック信号強度";
 "match_by_name" = "デバイス名で照合";
 "minute" = "分";

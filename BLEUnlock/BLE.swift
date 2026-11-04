@@ -142,6 +142,7 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     var activeModeTimer : Timer? = nil
     var connectionTimer : Timer? = nil
     var matchByName = false
+    var lockOnDisconnect = true
     var monitoredName: String?
     var lastMonitoredAt = 0.0
     var probingPeripherals: [UUID : CBPeripheral] = [:]
@@ -459,13 +460,11 @@ class BLE: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
                         didDisconnectPeripheral peripheral: CBPeripheral,
                         error: Error?)
     {
-        // error is nil when we cancelled the connection ourselves, and Bluetooth turning off is handled elsewhere
-        guard peripheral == monitoredPeripheral, error != nil, central.state == .poweredOn else { return }
-        print("Disconnected: \(error!.localizedDescription)")
-        // The link usually drops because the device went out of range, possibly before the averaged
-        // RSSI fell below Lock RSSI. Start the lock delay now instead of waiting for the no-signal timeout,
-        // and go back to scanning so an advertisement from a device that is still close can cancel it.
-        // Forget the readings from before the drop, so they don't outvote a weak advertisement.
+        // error is nil when we cancelled the connection ourselves
+        guard lockOnDisconnect, !passiveMode, peripheral == monitoredPeripheral,
+              let error = error, central.state == .poweredOn else { return }
+        print("Disconnected: \(error.localizedDescription)")
+        // Likely out of range. Start the lock delay, and scan so a fresh advertisement can cancel it.
         activeModeTimer?.invalidate()
         activeModeTimer = nil
         latestRSSIs.removeAll()

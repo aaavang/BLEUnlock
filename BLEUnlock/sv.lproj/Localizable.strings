@@ -17,6 +17,7 @@
 "launch_at_login" = "Starta vid inloggning";
 "lock_delay" = "Fördröjning för låsning";
 "lock_now" = "Lås skärmen nu";
+"lock_on_disconnect" = "Lås vid frånkoppling";
 "lock_rssi" = "Lås RSSI";
 "match_by_name" = "Matcha enhet efter namn";
 "minute" = "minut";

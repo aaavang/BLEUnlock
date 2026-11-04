@@ -644,6 +644,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
         ble.setPassiveMode(passiveMode)
     }
 
+    @objc func toggleLockOnDisconnect(_ menuItem: NSMenuItem) {
+        let lockOnDisconnect = !prefs.bool(forKey: "lockOnDisconnect")
+        prefs.set(lockOnDisconnect, forKey: "lockOnDisconnect")
+        menuItem.state = lockOnDisconnect ? .on : .off
+        ble.lockOnDisconnect = lockOnDisconnect
+    }
+
     @objc func toggleMatchByName(_ menuItem: NSMenuItem) {
         let matchByName = !prefs.bool(forKey: "matchByName")
         prefs.set(matchByName, forKey: "matchByName")
@@ -773,6 +780,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
         item = mainMenu.addItem(withTitle: t("passive_mode"), action: #selector(togglePassiveMode), keyEquivalent: "")
         item.state = prefs.bool(forKey: "passiveMode") ? .on : .off
 
+        item = mainMenu.addItem(withTitle: t("lock_on_disconnect"), action: #selector(toggleLockOnDisconnect), keyEquivalent: "")
+        item.state = prefs.bool(forKey: "lockOnDisconnect") ? .on : .off
+
         item = mainMenu.addItem(withTitle: t("match_by_name"), action: #selector(toggleMatchByName), keyEquivalent: "")
         item.state = prefs.bool(forKey: "matchByName") ? .on : .off
         
@@ -802,6 +812,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
     }
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
+        prefs.register(defaults: ["lockOnDisconnect": true])
         if let button = statusItem.button {
             button.image = NSImage(named: "StatusBarDisconnected")
             constructMenu()
@@ -809,6 +820,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSMenuItemVa
         ble.delegate = self
         ble.monitoredName = prefs.string(forKey: "deviceName")
         ble.matchByName = prefs.bool(forKey: "matchByName")
+        ble.lockOnDisconnect = prefs.bool(forKey: "lockOnDisconnect")
         updateStatusTitle()
         if let str = prefs.string(forKey: "device") {
             if let uuid = UUID(uuidString: str) {
